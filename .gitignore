@@ -1,0 +1,26 @@
+# IDE
+.idea/
+.vscode/
+
+# Environment
+.env
+backend/.env
+
+# Dependencies
+node_modules/
+backend/vendor/
+backend/public/build/
+backend/public/hot/
+backend/public/storage
+backend/storage/*.key
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/testing/*
+backend/storage/framework/views/*
+
+# System
+.DS_Store
+Thumbs.db
+
+# Laravel Sail
+backend/auth.json
