@@ -9,22 +9,41 @@ Laravel Omni Kit is built to be a robust starting point for developers who want 
 ### 🏗 Monorepo Structure
 
 - **`backend/`**: Laravel 13 API powerhouse.
-- **`app/`**: (Coming Soon) A unified directory for:
-    - **Next.js**: High-performance web application.
-    - **React Native**: Cross-platform mobile app.
+- **`apps/next-app`**: High-performance web application (Next.js + Shadcn).
 - **`marketing/`**: (Coming Soon) **Astro** powered marketing website for SEO and performance.
 
-## 🛠 Tech Stack
+## 🛠 Tech Stack (Backend)
 
-- **Backend**: Laravel 13, PostgreSQL, Redis, Meilisearch, Mailpit.
-- **Frontend (Planned)**: Next.js, React Native, Astro.
-- **DevOps**: Docker (via Laravel Sail).
+- **Framework**: Laravel 13 (Octane + FrankenPHP)
+- **Database**: PostgreSQL
+- **Cache/Queue**: Redis
+- **Real-time**: Laravel Reverb
+- **Admin Panels**: Filament v5 (Hybrid Strategy)
+- **Roles/Teams**: Spatie Permissions (Team-based Multi-tenancy)
+
+---
+
+## 🔐 Default Credentials
+
+The following users are created by the `php artisan db:seed` command. All passwords are set to `password`.
+
+### 🛡 Platform Admin (Filament `/admin`)
+Used for managing the entire platform.
+- **Super Admin**: `superadmin@example.com`
+- **Manager**: `admin@example.com`
+
+### 🏢 Team/Brand Accounts (Filament `/app` & Next.js)
+Used for business/brand owners and their members.
+- **Team Owner**: `owner@example.com` (Owns "Default Team")
+- **Team Member**: `member@example.com` (Member of "Default Team")
 
 ---
 
 ## 🚦 Getting Started
 
-For detailed instructions on how to set up your local development environment, please refer to the [DEV_SETUP.md](./DEV_SETUP.md) file.
+1.  Clone the repository.
+2.  Follow the [Backend Setup Guide](./backend/README.md).
+3.  Follow the [Docker & Deployment Guide](./backend/DOCKER_GUIDE.md).
 
 ## 📄 License
 
