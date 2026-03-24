@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserResource;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ class AuthController extends Controller
     /**
      * Register a new user.
      */
-    public function register(Request $request): JsonResponse
+    public function register(Request $request): UserResource
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -29,43 +30,57 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
-            'user' => $user->load('currentTeam'),
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-        ]);
+        return UserResource::make($user)
+            ->additional([
+                'meta' => [
+                    'access_token' => $token,
+                    'token_type' => 'Bearer',
+                ],
+            ]);
     }
 
     /**
      * Login user and create token.
      */
-    public function login(Request $request): JsonResponse
+    public function login(Request $request)
     {
         $request->validate([
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
         ]);
 
-        $token = $this->authService->login(
-            $request->email,
-            $request->password,
-            $request->header('User-Agent') ?? 'web'
-        );
+        $user = \App\Models\User::where('email', $request->email)->first();
 
-        return response()->json([
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-        ]);
+        if (!$user || !\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'email' => [__('auth.failed')],
+            ]);
+        }
+
+        // Prevent platform admins from logging in via the public API
+        if ($user->hasRole([\App\Enums\PlatformRole::SUPER_ADMIN->value, \App\Enums\PlatformRole::MANAGER->value])) {
+            return response()->json([
+                'message' => 'Unauthorized. Platform admins must use the administrative panel.',
+            ], 403);
+        }
+
+        $token = $user->createToken($request->header('User-Agent') ?? 'web')->plainTextToken;
+
+        return UserResource::make($user)
+            ->additional([
+                'meta' => [
+                    'access_token' => $token,
+                    'token_type' => 'Bearer',
+                ],
+            ]);
     }
 
     /**
      * Get authenticated user.
      */
-    public function me(Request $request): JsonResponse
+    public function me(Request $request): UserResource
     {
-        return response()->json(
-            $request->user()->load(['currentTeam', 'teams'])
-        );
+        return UserResource::make($request->user());
     }
 
     /**
