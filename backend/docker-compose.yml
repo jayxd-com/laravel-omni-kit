@@ -1,0 +1,68 @@
+services:
+  # --- THE WEB SERVER (FrankenPHP + Octane) ---
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    env_file: .env
+    environment:
+      RUN_MIGRATIONS: "${RUN_MIGRATIONS:-false}"
+    command:
+      - php
+      - artisan
+      - octane:start
+      - --server=frankenphp
+      - --host=0.0.0.0
+      - --port=80
+      - --admin-port=2019
+    volumes:
+      - laravel_storage:/app/storage/app
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.web.loadbalancer.server.port=80"
+
+  # --- THE QUEUE (Horizon) ---
+  horizon:
+    build: .
+    restart: always
+    env_file: .env
+    command: [ "php", "artisan", "horizon" ]
+    stop_signal: SIGTERM
+    volumes:
+      - laravel_storage:/app/storage/app
+    networks:
+      - dokploy-network
+
+  # --- THE SCHEDULER ---
+  scheduler:
+    build: .
+    restart: always
+    env_file: .env
+    command: [ "php", "artisan", "schedule:work" ]
+    volumes:
+      - laravel_storage:/app/storage/app
+    networks:
+      - dokploy-network
+
+  # --- THE WEBSOCKET SERVER (Reverb) ---
+  reverb:
+    build: .
+    restart: always
+    env_file: .env
+    command: [ "php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080" ]
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.reverb.loadbalancer.server.port=8080"
+
+volumes:
+  laravel_storage:
+
+networks:
+  dokploy-network:
+    external: true
+    name: dokploy-network

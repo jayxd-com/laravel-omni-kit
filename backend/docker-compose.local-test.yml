@@ -1,0 +1,118 @@
+services:
+  # --- THE REVERSE PROXY (Traefik) ---
+  traefik:
+    image: traefik:v3.1
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8081:8080" # Traefik Dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - omni-kit-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`monitor.omni-kit.localhost`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+
+  # --- INFRASTRUCTURE ---
+  pgsql:
+    image: 'postgres:15-alpine'
+    environment:
+      POSTGRES_DB: '${DB_DATABASE:-backend}'
+      POSTGRES_USER: '${DB_USERNAME:-sail}'
+      POSTGRES_PASSWORD: '${DB_PASSWORD:-password}'
+    networks:
+      - omni-kit-network
+
+  redis:
+    image: 'redis:alpine'
+    networks:
+      - omni-kit-network
+
+  # --- YOUR PRODUCTION SERVICES ---
+  web:
+    build: .
+    restart: always
+    env_file: .env
+    environment:
+      DB_HOST: pgsql
+      REDIS_HOST: redis
+      RUN_MIGRATIONS: "true"
+    command:
+      - php
+      - artisan
+      - octane:start
+      - --server=frankenphp
+      - --host=0.0.0.0
+      - --port=80
+      - --admin-port=2019
+    depends_on:
+      - pgsql
+      - redis
+    networks:
+      - omni-kit-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web.rule=Host(`omni-kit.localhost`)"
+      - "traefik.http.services.web.loadbalancer.server.port=80"
+
+  reverb:
+    build: .
+    restart: always
+    env_file: .env
+    environment:
+      DB_HOST: pgsql
+      REDIS_HOST: redis
+    command: [ "php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080" ]
+    depends_on:
+      - pgsql
+      - redis
+    networks:
+      - omni-kit-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.reverb.rule=Host(`ws.omni-kit.localhost`)"
+      - "traefik.http.services.reverb.loadbalancer.server.port=8080"
+
+  horizon:
+    build: .
+    restart: always
+    env_file: .env
+    environment:
+      DB_HOST: pgsql
+      REDIS_HOST: redis
+    command: [ "php", "artisan", "horizon" ]
+    volumes:
+      - laravel_storage:/app/storage/app
+    depends_on:
+      - pgsql
+      - redis
+    networks:
+      - omni-kit-network
+
+  scheduler:
+    build: .
+    restart: always
+    env_file: .env
+    environment:
+      DB_HOST: pgsql
+      REDIS_HOST: redis
+    command: [ "php", "artisan", "schedule:work" ]
+    volumes:
+      - laravel_storage:/app/storage/app
+    depends_on:
+      - pgsql
+    networks:
+      - omni-kit-network
+
+volumes:
+  laravel_storage:
+
+networks:
+  omni-kit-network:
+    name: omni-kit-network

@@ -1,0 +1,89 @@
+services:
+  # --- INFRASTRUCTURE ---
+  pgsql:
+    image: 'postgres:15-alpine'
+    environment:
+      POSTGRES_DB: '${DB_DATABASE:-backend}'
+      POSTGRES_USER: '${DB_USERNAME:-sail}'
+      POSTGRES_PASSWORD: '${DB_PASSWORD:-password}'
+    networks:
+      - omni-kit-test-network
+
+  redis:
+    image: 'redis:alpine'
+    networks:
+      - omni-kit-test-network
+
+  meilisearch:
+    image: 'getmeili/meilisearch:latest'
+    environment:
+      MEILI_NO_ANALYTICS: 'true'
+      MEILI_MASTER_KEY: '${MEILISEARCH_KEY:-masterKey}'
+    networks:
+      - omni-kit-test-network
+
+  # --- PRODUCTION APP SERVICES ---
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    env_file: .env
+    environment:
+      DB_HOST: pgsql
+      REDIS_HOST: redis
+      MEILISEARCH_HOST: http://meilisearch:7700
+      RUN_MIGRATIONS: "true"
+    command: ["php", "artisan", "octane:start", "--server=frankenphp", "--host=0.0.0.0", "--port=80", "--admin-port=2019"]
+    ports:
+      - "8000:80"
+    depends_on:
+      - pgsql
+      - redis
+    networks:
+      - omni-kit-test-network
+
+  reverb:
+    build: .
+    restart: always
+    env_file: .env
+    environment:
+      DB_HOST: pgsql
+      REDIS_HOST: redis
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    networks:
+      - omni-kit-test-network
+
+  horizon:
+    build: .
+    restart: always
+    env_file: .env
+    environment:
+      DB_HOST: pgsql
+      REDIS_HOST: redis
+    command: ["php", "artisan", "horizon"]
+    depends_on:
+      - redis
+    networks:
+      - omni-kit-test-network
+
+  scheduler:
+    build: .
+    restart: always
+    env_file: .env
+    environment:
+      DB_HOST: pgsql
+      REDIS_HOST: redis
+    command: ["php", "artisan", "schedule:work"]
+    depends_on:
+      - pgsql
+    networks:
+      - omni-kit-test-network
+
+networks:
+  omni-kit-test-network:
+    name: omni-kit-test-network

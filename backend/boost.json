@@ -1,0 +1,19 @@
+{
+    "agents": [
+        "gemini"
+    ],
+    "guidelines": true,
+    "herd_mcp": false,
+    "mcp": true,
+    "nightwatch_mcp": false,
+    "packages": [
+        "filament/filament",
+        "spatie/laravel-permission"
+    ],
+    "sail": true,
+    "skills": [
+        "configuring-horizon",
+        "pest-testing",
+        "laravel-permission-development"
+    ]
+}
