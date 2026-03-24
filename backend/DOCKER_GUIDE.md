@@ -25,7 +25,29 @@ This configuration is designed to **mimic your production environment** as close
 *   **Routing:** Uses **Traefik** to provide local domains:
     *   `http://omni-kit.localhost` (API/Web)
     *   `http://monitor.omni-kit.localhost` (Traefik Dashboard)
-*   **Command:** `docker-compose -f docker-compose.local-test.yml up -d --build`
+
+### 🛠 Essential Commands
+
+*   **Start the environment:**
+    ```bash
+    docker compose -f docker-compose.local-test.yml up -d
+    ```
+*   **Stop and remove containers:**
+    ```bash
+    docker compose -f docker-compose.local-test.yml down
+    ```
+*   **Rebuild and start (after code changes):**
+    ```bash
+    docker compose -f docker-compose.local-test.yml up -d --build
+    ```
+*   **View live logs:**
+    ```bash
+    docker compose -f docker-compose.local-test.yml logs -f
+    ```
+*   **Check container status:**
+    ```bash
+    docker compose -f docker-compose.local-test.yml ps
+    ```
 
 ---
 
@@ -64,4 +86,4 @@ Reverb runs in its own container to ensure WebSocket connections stay stable dur
 When adding new system-level dependencies (e.g., a new PHP extension or a system library like `libpng`):
 1.  Add it to the **Stage 2** `RUN install-php-extensions` section in the `Dockerfile`.
 2.  If it's needed during the build process (like `npm install`), add it to **Stage 1**.
-3.  Rebuild the local test stack to verify: `docker-compose -f docker-compose.local-test.yml up -d --build`.
+3.  Rebuild the local test stack to verify: `docker compose -f docker-compose.local-test.yml up -d --build`.
